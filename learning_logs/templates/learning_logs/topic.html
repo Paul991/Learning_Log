@@ -2,7 +2,8 @@
 {% load bootstrap4 %}
 
 {% block page_header %}
-  <h3><a href="{% url 'learning_logs:topic' topic.id %}">{{topic}}</a></h3>
+  <h3><a href="{% url 'learning_logs:topic' topic.id %}">
+      {{topic}}</a><small> - @{{ topic.owner }}</small></h3>
 {% endblock page_header %}
 
 {% block content %}
@@ -13,9 +14,11 @@
   {% for entry in entries %}
     <div class="card mb-3">
       <h4 class="card-header">
-        {{ entry.date_added|date:'M d, Y H:i' }}
-        <small><a href="{% url 'learning_logs:edit_entry' entry.id %}">
-            edit entry</a></small>
+        <div class="d-flex">
+          {{ entry.date_added|date:'M d, Y H:i' }}
+            <a href="{% url 'learning_logs:edit_entry' 
+                entry.id %}" class="ml-auto"><font size="-1">edit entry</font></a>
+        </div>
       </h4>
       <div class="card-body">
         {{ entry.text|linebreaks }}

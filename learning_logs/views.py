@@ -9,19 +9,27 @@ def index(request):
 	"""The home page for Learning Log"""
 	return render(request,'learning_logs/index.html')
 
-@login_required
+
 def topics(request):
 	"""Show all topics"""
-	topics = Topic.objects.filter(owner=request.user).order_by('date_added')
-	context = {'topics': topics}
-	return render(request, 'learning_logs/topics.html', context)
+	if request.user.is_authenticated:
+		topics = Topic.objects.filter(owner=request.user, public=False).order_by('date_added')
+		public_topics = Topic.objects.filter(public=True)
+		context = {'topics': topics, 'public_topics': public_topics}
+		return render(request, 'learning_logs/topics.html', context)
+	else:
+		public_topics = Topic.objects.filter(public=True).order_by('date_added')
+		context = {'public_topics': public_topics}
+		return render(request, 'learning_logs/topics.html', context)
 
-@login_required
+
 def topic(request, topic_id):
 	"""Show a single topic and all its entries."""
 	topic = get_object_or_404(Topic, id=topic_id)
-	# Make sure the topic belongs to the current user
-	check_topic_owner(request, topic)
+	# If the topic is private make sure the topic belongs to the current user
+
+	if topic.public == False:
+	  check_topic_owner(request, topic)
 
 	entries = topic.entry_set.order_by('-date_added')
 	context = {'topic': topic, 'entries': entries}
@@ -39,6 +47,8 @@ def new_topic(request):
 		if form.is_valid():
 			new_topic = form.save(commit=False)
 			new_topic.owner = request.user
+			if request.POST['public'] == True:
+				new_topic.public = True
 			new_topic.save()
 			return redirect('learning_logs:topics')
 
@@ -49,9 +59,12 @@ def new_topic(request):
 @login_required
 def new_entry(request, topic_id):
 	"""Add a new entry for a particular topic"""
-	topic = Topic.objects.get(id=topic_id)
-	check_topic_owner(request, topic)
+	topic = get_object_or_404(Topic, id=topic_id)
+	# If the topic is private make sure the topic belongs to the current user
 
+	if topic.public == False:
+	  check_topic_owner(request, topic)
+ 
 	if request.method != 'POST':
 		# No data submited; create a blank form.
 		form = EntryForm()
@@ -71,7 +84,7 @@ def new_entry(request, topic_id):
 @login_required
 def edit_entry(request, entry_id):
 	"""Edit and existing entry"""
-	entry = Entry.objects.get(id=entry_id)
+	entry = get_object_or_404(Entry, id=entry_id)
 	topic = entry.topic
 	check_topic_owner(request, topic)
 
